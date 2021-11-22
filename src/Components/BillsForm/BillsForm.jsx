@@ -13,38 +13,16 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 
+import { paperStyle, avatarStyle, headerStyle, root } from './BillsFormStyles';
+import SingleTable from '../SingleTable/SingleTable';
+import MultiTable from '../MultiTable/MultiTable';
+import LowerContent from '../LowerContent/LowerContent';
+
 const SwalComponent = withReactContent(Swal);
 
 const BillsForm = ({ handleChange }) => {
-  //Styles
-  const paperStyle = {
-    padding: '20',
-    height: '36vh',
-    width: '300',
-    margin: '0 auto',
-  };
-  const avatarStyle = { backgroundColor: '#02CAF8' };
-  const headerStyle = {
-    margin: '0',
-    fontFamily: 'roboto',
-    fontSize: '18',
-    fontWeight: '300',
-    padding: '25',
-  };
-
   const useStyles = makeStyles({
-    root: {
-      background: 'linear-gradient(45deg, #02CAF8, 30%, blue 70%)',
-      borderRadius: '4',
-      border: '0',
-      color: 'white',
-      height: '48',
-      padding: '25px 30px',
-      margin: '25px 0',
-      fontFamily: 'roboto',
-      fontSize: '18',
-      fontWeight: '300',
-    },
+    root,
     label: {
       textTransform: 'capitalize',
     },
@@ -63,8 +41,15 @@ const BillsForm = ({ handleChange }) => {
       .typeError('Debe especificar solo numeros de documento'),
   });
 
-  const onSubmit = (values, props) => {
-    run(values.document, props);
+  const onSubmit = async ({ document }, props) => {
+    const token = await login();
+    const { data: fieldsData } = await fetchFields(token);
+    const {
+      data: { bills },
+    } = await fetchBills(token, document);
+    setUsers({ fields: fieldsData, bills });
+    props.resetForm();
+    props.setSubmitting();
   };
 
   //API consumption
@@ -95,7 +80,7 @@ const BillsForm = ({ handleChange }) => {
   };
 
   //
-  const consultFields = async (token) => {
+  const fetchFields = async (token) => {
     let config = {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -118,7 +103,7 @@ const BillsForm = ({ handleChange }) => {
       });
   };
 
-  const consultBills = async (token, document) => {
+  const fetchBills = async (token, document) => {
     let config = {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -144,18 +129,6 @@ const BillsForm = ({ handleChange }) => {
 
   const [users, setUsers] = useState(null);
 
-  const run = async (document, props) => {
-    const token = await login();
-    const campos = await consultFields(token);
-    const facturas = await consultBills(token, document);
-
-    setUsers({ campos, facturas });
-    props.resetForm();
-    props.setSubmitting();
-  };
-
-  console.log(users);
-
   //Modals
   const modalHandler = () => {
     Swal.fire({
@@ -167,47 +140,24 @@ const BillsForm = ({ handleChange }) => {
   };
 
   const modalTest = () => {
-    let title = '';
-    let body = '';
-    const campos = users.campos.data;
-    const facturas = users.facturas.data.bills;
-
-    for (let index = 0; index < campos.length; index++) {
-      title += `<th>${campos[index].name}</th>`;
-    }
-
-    for (let index = 0; index < facturas.length; index++) {
-      body += '<tr>';
-      for (let index2 = 0; index2 < campos.length; index2++) {
-        body += `<td data-label="${campos[index2].name}> ${
-          facturas[index][campos[index2].key]
-            ? facturas[index][campos[index2].key]
-            : '-'
-        }</td>`;
-      }
-      body += '</tr>';
-    }
+    const { fields, bills } = users;
+    const data = { titles: fields, bills };
 
     //SWAL
     SwalComponent.fire({
       title: 'Detalle de Factura',
-      html: `<table>
-      <thead>
-        <tr>
-          ${title}
-        </tr>
-      </thead>
-      <tbody>
-        ${body}
-      </tbody>
-    </table>`,
+      html:
+        users.bills.length > 1 ? (
+          <MultiTable data={data} />
+        ) : (
+          <SingleTable data={data} />
+        ),
       showCloseButton: true,
       showCancelButton: true,
       focusConfirm: false,
+      width: '1200px',
       confirmButtonText:
-        users.facturas.data.bills.length > 1
-          ? 'Pagar Facturas'
-          : 'Pagar Factura',
+        users.bills.length > 1 ? 'Pagar Facturas' : 'Pagar Factura',
       confirmButtonAriaLabel: 'Thumbs up, great!',
       cancelButtonText: 'Cancelar',
       cancelButtonAriaLabel: 'Thumbs down',
@@ -242,11 +192,7 @@ const BillsForm = ({ handleChange }) => {
 
   return (
     <Grid>
-      {users
-        ? users.facturas.data.bills.length > 0
-          ? modalTest()
-          : modalHandler()
-        : null}
+      {users ? (users.bills.length ? modalTest() : modalHandler()) : null}
       <Paper style={paperStyle}>
         <Grid align='center'>
           <Avatar style={avatarStyle}>{/* <PermIdentityIcon /> */}</Avatar>
@@ -274,6 +220,7 @@ const BillsForm = ({ handleChange }) => {
                 color='primary'
                 fullWidth
                 variant='contained'
+                size='large'
                 disabled={props.isSubmitting}
                 classes={{ root: classes.root, label: classes.label }}
               >
@@ -283,6 +230,7 @@ const BillsForm = ({ handleChange }) => {
           )}
         </Formik>
       </Paper>
+      <LowerContent />
     </Grid>
   );
 };

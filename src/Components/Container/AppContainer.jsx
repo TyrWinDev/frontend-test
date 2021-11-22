@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Paper, Tabs, Tab, Typography, Box } from '@material-ui/core';
 
 import BillsForm from '../BillsForm/BillsForm';
-import DetailedBills from '../DetailedBills/DetailedBills';
+import AutoPayments from '../AutoPayments/AutoPayments';
 
 const AppContainer = () => {
   //Styles
-  const paperStyle = { width: '340', margin: '20px auto' };
+  const paperStyle = { width: '650', margin: '20px auto' };
   const tabStyle = { fontSize: '12' };
 
   const [value, setValue] = useState(0);
@@ -36,13 +36,14 @@ const AppContainer = () => {
   }
 
   return (
-    <Paper elevation={20} style={paperStyle}>
+    <Paper elevation={16} style={paperStyle}>
       <Tabs
         value={value}
         indicatorColor='primary'
         textColor='primary'
         onChange={handleChange}
         aria-label='disabled tabs example'
+        variant='fullWidth'
       >
         <Tab style={tabStyle} label='Ingrese sus datos' />
         <Tab style={tabStyle} label='Pagos Automaticos' />
@@ -51,7 +52,7 @@ const AppContainer = () => {
         <BillsForm handleChange={handleChange} />
       </TabPanel>
       <TabPanel value={value} index={1}>
-        <DetailedBills />
+        <AutoPayments handleChange={handleChange} />
       </TabPanel>
     </Paper>
   );
